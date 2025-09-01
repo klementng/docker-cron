@@ -4,12 +4,15 @@ set -euo pipefail
 PUID="${PUID:-1000}"
 PGID="${PGID:-1000}"
 EXTRA_PACKAGES="${EXTRA_PACKAGES:-}"
+TZ="${TZ:-UTC}"
 
 echo "CRON_SCHEDULE=${CRON_SCHEDULE:-not set}"
 echo "CRON_COMMAND=${CRON_COMMAND:-not set}"
 echo "PUID=${PUID}"
 echo "PGID=${PGID}"
+echo "TZ=${TZ}"
 echo "EXTRA_PACKAGES=${EXTRA_PACKAGES:-not set}"
+echo "Current time: $(date)"
 echo "==========================================="
 
 if [[ -n "${EXTRA_PACKAGES// /}" ]]; then
@@ -21,6 +24,9 @@ if [[ -n "${EXTRA_PACKAGES// /}" ]]; then
   echo "Package installation finished."
 fi
 
+export TZ
+ln -snf "/usr/share/zoneinfo/${TZ}" /etc/localtime
+echo "${TZ}" > /etc/timezone
 
 pkill -x cron >/dev/null 2>&1 || true
 
@@ -28,6 +34,7 @@ if [[ -z "${CRON_SCHEDULE:-}" || -z "${CRON_COMMAND:-}" ]]; then
   echo "Error: CRON_SCHEDULE and CRON_COMMAND are required."
   exit 1
 fi
+
 
 USERNAME="u${PUID}"
 GROUPNAME="u${PGID}"
