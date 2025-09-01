@@ -50,11 +50,10 @@ if ! id -u "${USERNAME}" >/dev/null 2>&1; then
   useradd -u "${PUID}" -g "${GROUPNAME}" -m -s /bin/bash "${USERNAME}"
 fi
 
-# redirect job output to container stdout/stderr
-CRON_CMD="/bin/sh -lc '${CRON_COMMAND} >/proc/1/fd/1 2>/proc/1/fd/2'"
-echo "${CRON_SCHEDULE} ${CRON_CMD}" | crontab -u "${USERNAME}" -
+CRON_CMD="/bin/sh -lc 'su -s /bin/bash ${USERNAME} -c \"${CRON_COMMAND}\" >/proc/1/fd/1 2>/proc/1/fd/2'"
+echo "${CRON_SCHEDULE} ${CRON_CMD}" | crontab -
 
-echo "Installed crontab for ${USERNAME}:"
-crontab -u "${USERNAME}" -l || true
+echo "Installed crontab (commands running as ${USERNAME}):"
+crontab -l || true
 
 exec cron -f
