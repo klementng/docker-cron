@@ -6,7 +6,7 @@ ENV EXTRA_PACKAGES=""
 ENV TZ=UTC
 
 RUN apt update && \
-    apt install -y --no-install-recommends cron ca-certificates && \
+    apt install -y --no-install-recommends cron ca-certificates tzdata && \
     rm -rf /var/lib/apt/lists/*
 
 COPY entrypoint.sh /entrypoint.sh
