@@ -15,11 +15,12 @@ echo "==========================================="
 if [[ -n "${EXTRA_PACKAGES// /}" ]]; then
   echo "Installing runtime packages: ${EXTRA_PACKAGES}"
   export DEBIAN_FRONTEND=noninteractive
-  apt update
-  apt install -y --no-install-recommends ${EXTRA_PACKAGES}
+  apt-get update
+  apt-get install -y --no-install-recommends ${EXTRA_PACKAGES}
   rm -rf /var/lib/apt/lists/*
   echo "Package installation finished."
 fi
+
 
 pkill -x cron >/dev/null 2>&1 || true
 
@@ -28,20 +29,25 @@ if [[ -z "${CRON_SCHEDULE:-}" || -z "${CRON_COMMAND:-}" ]]; then
   exit 1
 fi
 
-if ! getent group "${PUID}" >/dev/null; then
-  echo "Creating group '${PUID}' with GID=${PGID}"
-  groupadd -g "${PGID}" "${PUID}" || true
+USERNAME="u${PUID}"
+GROUPNAME="u${PGID}"
+
+
+if ! getent group "${GROUPNAME}" >/dev/null; then
+  echo "Creating group '${GROUPNAME}' with GID=${PGID}"
+  groupadd -g "${PGID}" "${GROUPNAME}"
 fi
 
-
-if ! id -u "${PUID}" >/dev/null 2>&1; then
-  echo "Creating user '${PUID}' with UID=${PUID} and GID=${PGID}"
-  useradd -u "${PUID}" -g "${PGID}" -m -s /bin/bash "${PUID}" || true
+if ! id -u "${USERNAME}" >/dev/null 2>&1; then
+  echo "Creating user '${USERNAME}' with UID=${PUID} and GID=${PGID}"
+  useradd -u "${PUID}" -g "${GROUPNAME}" -m -s /bin/bash "${USERNAME}"
 fi
 
+# redirect job output to container stdout/stderr
 CRON_CMD="/bin/sh -lc '${CRON_COMMAND} >/proc/1/fd/1 2>/proc/1/fd/2'"
-echo "${CRON_SCHEDULE} ${CRON_CMD}" | crontab -u "${PUID}" -
-echo "Installed crontab for ${PUID}:"
+echo "${CRON_SCHEDULE} ${CRON_CMD}" | crontab -u "${USERNAME}" -
 
-crontab -u "${PUID}" -l || true
+echo "Installed crontab for ${USERNAME}:"
+crontab -u "${USERNAME}" -l || true
+
 exec cron -f
